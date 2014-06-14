@@ -21,9 +21,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.tycho.nexus.internal.plugin.test.TestUtil;
 import org.eclipse.tycho.nexus.internal.plugin.test.UnzipPluginTestSupport;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -57,6 +59,37 @@ public class UnzipCacheTest extends UnzipPluginTestSupport {
         assertTrue(oldOtherzip.exists());
         assertTrue(oldZip.exists());
         assertTrue(latestOtherZip.exists());
+    }
+
+    @Test
+    public void testReleaseRedeploy() throws Exception {
+        String redeployableArchiveRepoPath = "/dir/redeployable-1.0.0.zip";
+        String redeployableArchiveFullPath = "src/test/resources/redeployRelRepo" + redeployableArchiveRepoPath;
+        final File redeployableArchiveFile = new File(redeployableArchiveFullPath);
+
+        try {
+            UnzipCache cache = createUnzipRepo(createRedeployRelRepo()).getCache();
+
+            final File version1File = cache.getArchive("/dir/version-1.zip");
+            final File version2File = cache.getArchive("/dir/version-2.zip");
+
+            FileUtils.copyFile(version1File, redeployableArchiveFile);
+
+            final File redeployableRequest1 = cache.getArchive(redeployableArchiveRepoPath);
+            //expect content of version-1.zip
+            Assert.assertArrayEquals(FileUtils.readFileToByteArray(version1File),
+                    FileUtils.readFileToByteArray(redeployableRequest1));
+
+            //update content of redeployable-1.0.0
+            FileUtils.copyFile(version2File, redeployableArchiveFile);
+
+            final File redeployableRequest2 = cache.getArchive(redeployableArchiveRepoPath);
+            //expect content of version-2.zip
+            Assert.assertArrayEquals(FileUtils.readFileToByteArray(version2File),
+                    FileUtils.readFileToByteArray(redeployableRequest2));
+        } finally {
+            FileUtils.deleteQuietly(redeployableArchiveFile);
+        }
     }
 
     @Test
