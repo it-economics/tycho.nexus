@@ -63,15 +63,16 @@ public class UnzipCacheTest extends UnzipPluginTestSupport {
 
     @Test
     public void testReleaseRedeploy() throws Exception {
+        String redeployableRepoDir = "src/test/resources/redeployRelRepo";
         String redeployableArchiveRepoPath = "/dir/redeployable-1.0.0.zip";
-        String redeployableArchiveFullPath = "src/test/resources/redeployRelRepo" + redeployableArchiveRepoPath;
+        String redeployableArchiveFullPath = redeployableRepoDir + redeployableArchiveRepoPath;
         final File redeployableArchiveFile = new File(redeployableArchiveFullPath);
 
         try {
             UnzipCache cache = createUnzipRepo(createRedeployRelRepo()).getCache();
 
-            final File version1File = cache.getArchive("/dir/version-1.zip");
-            final File version2File = cache.getArchive("/dir/version-2.zip");
+            final File version1File = new File(redeployableRepoDir + "/dir/version-1.zip");
+            final File version2File = new File(redeployableRepoDir + "/dir/version-2.zip");
 
             FileUtils.copyFile(version1File, redeployableArchiveFile);
 
@@ -82,6 +83,7 @@ public class UnzipCacheTest extends UnzipPluginTestSupport {
 
             //update content of redeployable-1.0.0
             FileUtils.copyFile(version2File, redeployableArchiveFile);
+            FileUtils.touch(redeployableArchiveFile);
 
             final File redeployableRequest2 = cache.getArchive(redeployableArchiveRepoPath);
             //expect content of version-2.zip
